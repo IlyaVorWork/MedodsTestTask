@@ -1,0 +1,27 @@
+services:
+
+  service:
+    build:
+      context: ../
+      dockerfile: build/docker/service/Dockerfile
+    container_name: service
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - ${SERVICE_PORT}:${SERVICE_PORT}
+    depends_on:
+      - db
+
+  db:
+    container_name: service_db
+    build:
+      context: ../
+      dockerfile: build/docker/db/Dockerfile
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: $DB_USERNAME
+      POSTGRES_PASSWORD: $DB_PASSWORD
+      POSTGRES_DB: $DB_NAME
