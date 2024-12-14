@@ -3,6 +3,7 @@ package auth
 import (
 	"net/http"
 
+	"MedodsTestTask/internal/pkg"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -23,6 +24,8 @@ func NewHandler(service IService) *Handler {
 }
 
 func (handler *Handler) Login(c *gin.Context) {
+
+	// Получение id пользователя из параметра запроса
 	guid := c.Query("guid")
 	err := uuid.Validate(guid)
 	if err != nil {
@@ -30,6 +33,7 @@ func (handler *Handler) Login(c *gin.Context) {
 		return
 	}
 
+	// Получение IP клиента
 	ipv4 := c.RemoteIP()
 
 	pair, err := handler.service.Login(guid, ipv4)
@@ -43,12 +47,15 @@ func (handler *Handler) Login(c *gin.Context) {
 }
 
 func (handler *Handler) Refresh(c *gin.Context) {
+
+	// Получение access token'а из заголовка авторизации
 	accessToken := c.Request.Header.Get("Authorization")
 	if accessToken == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"Error": "access token was not provided"})
 		return
 	}
 
+	// Получение данных из тела запроса
 	var queryData RefreshDTO
 	err := c.ShouldBindJSON(&queryData)
 	if err != nil {
@@ -56,6 +63,12 @@ func (handler *Handler) Refresh(c *gin.Context) {
 		return
 	}
 
+	// Проверка на совпадения предоставленных access и refresh токенов
+	if accessToken == queryData.RefreshToken {
+		c.JSON(http.StatusBadRequest, gin.H{"Error": pkg.ProvidedTokensSimilar.Error()})
+	}
+
+	// Получение IP клиента
 	ipv4 := c.ClientIP()
 
 	pair, err := handler.service.Refresh(accessToken, queryData.RefreshToken, ipv4)

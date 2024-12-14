@@ -46,7 +46,7 @@ func GetClaims(token string) (*TokenClaims, error) {
 	_, err := jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(JWT_SECRET_KEY), nil
 	})
-	if err != nil && err.Error() != "" {
+	if err != nil && err.Error() != "token is invalid" {
 		return nil, err
 	}
 
@@ -54,11 +54,13 @@ func GetClaims(token string) (*TokenClaims, error) {
 }
 
 func ValidateRefreshToken(rtClaims *TokenClaims, ipv4 string) error {
+	// Проверка, истекло ли время действия токена
 	expired := rtClaims.VerifyExpiresAt(time.Now().Unix(), true)
 	if !expired {
 		return pkg.ExpiredTokenError
 	}
 
+	// Проверка на совпадения IP адреса в токене и того, кто его предоставил
 	if rtClaims.IPv4 != ipv4 {
 		return pkg.UnmatchedIPsError
 	}
